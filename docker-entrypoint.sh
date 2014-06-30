@@ -45,6 +45,12 @@ if [ ! -e wp-config.php ]; then
 	cp wp-config-sample.php wp-config.php
 fi
 
+# Link Advertising Manager
+if [ -e /usr/src/wordpress/wp-content/plugins/advertising-manager ]; then
+  ln -s /usr/src/code/wordpress/advertising-manager /usr/src/wordpress/wp-content/plugins/advertising-manager
+fi
+
+
 set_config() {
 	key="$1"
 	value="$2"
