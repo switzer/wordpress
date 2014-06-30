@@ -36,7 +36,8 @@ RUN find "$APACHE_CONFDIR" -type f -exec sed -ri ' \
 
 ADD . /usr/src/wordpress
 # Link Advertising Manager
-RUN cd /usr/src/wordpress/wp-content/plugins && ln -s /usr/src/code/wordpress/advertising-manager
+RUN cd /usr/src/wordpress/wp-content/plugins && /bin/bash -c "[ -d /usr/src/code/wordpress/advertising-manager ] && ln -s /usr/src/code/admanager_or_whatever || echo 'Not loading advertising manager'"
+
 RUN cp /usr/src/wordpress/docker-apache.conf /etc/apache2/sites-available/wordpress.conf \
 	&& a2dissite 000-default \
 	&& a2ensite wordpress
