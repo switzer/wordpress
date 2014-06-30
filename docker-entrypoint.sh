@@ -46,7 +46,7 @@ if [ ! -e wp-config.php ]; then
 fi
 
 # Link Advertising Manager
-if [ -e /usr/src/wordpress/wp-content/plugins/advertising-manager ]; then
+if [ -e /usr/src/code/wordpress/advertising-manager ]; then
   ln -s /usr/src/code/wordpress/advertising-manager /usr/src/wordpress/wp-content/plugins/advertising-manager
 fi
 
