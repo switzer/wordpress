@@ -1,44 +1,29 @@
-FROM debian:jessie
+FROM php:5.6-apache
 
-RUN apt-get update && apt-get install -y \
-		apache2 \
-		curl \
-		libapache2-mod-php5 \
-		php5-curl \
-		php5-gd \
-		php5-mysql \
-		rsync \
-		wget
+RUN apt-get update && apt-get install -y rsync && rm -r /var/lib/apt/lists/*
+
 RUN a2enmod rewrite
 
-RUN rm -rf /var/www/html && mkdir /var/www/html
-WORKDIR /var/www/html
+# install the PHP extensions we need
+RUN apt-get update && apt-get install -y libpng12-dev && rm -rf /var/lib/apt/lists/* \
+	&& docker-php-ext-install gd \
+	&& apt-get purge --auto-remove -y libpng12-dev
+RUN docker-php-ext-install mysqli
 
-# copy a few things from apache's init script that it requires to be setup
-ENV APACHE_CONFDIR /etc/apache2
-ENV APACHE_ENVVARS $APACHE_CONFDIR/envvars
-# and then a few more from $APACHE_CONFDIR/envvars itself
-ENV APACHE_RUN_USER www-data
-ENV APACHE_RUN_GROUP www-data
-ENV APACHE_RUN_DIR /var/run/apache2
-ENV APACHE_PID_FILE $APACHE_RUN_DIR/apache2.pid
-ENV APACHE_LOCK_DIR /var/lock/apache2
-ENV APACHE_LOG_DIR /var/log/apache2
-ENV LANG C
-RUN mkdir -p $APACHE_RUN_DIR $APACHE_LOCK_DIR $APACHE_LOG_DIR
+VOLUME /var/www/html
 
-# make CustomLog (access log) go to stdout instead of files
-#  and ErrorLog to stderr
-RUN find "$APACHE_CONFDIR" -type f -exec sed -ri ' \
-	s!^(\s*CustomLog)\s+\S+!\1 /proc/self/fd/1!g; \
-	s!^(\s*ErrorLog)\s+\S+!\1 /proc/self/fd/2!g; \
-' '{}' ';'
+ENV WORDPRESS_VERSION 4.0.1
+ENV WORDPRESS_UPSTREAM_VERSION 4.0.1
+ENV WORDPRESS_SHA1 ef1bd7ca90b67e6d8f46dc2e2a78c0ec4c2afb40
 
-ADD . /usr/src/wordpress
-RUN cp /usr/src/wordpress/docker-apache.conf /etc/apache2/sites-available/wordpress.conf \
-	&& a2dissite 000-default \
-	&& a2ensite wordpress
+# upstream tarballs include ./wordpress/ so this gives us /usr/src/wordpress
+RUN curl -o wordpress.tar.gz -SL https://wordpress.org/wordpress-${WORDPRESS_UPSTREAM_VERSION}.tar.gz \
+	&& echo "$WORDPRESS_SHA1 *wordpress.tar.gz" | sha1sum -c - \
+	&& tar -xzf wordpress.tar.gz -C /usr/src/ \
+	&& rm wordpress.tar.gz
 
-ENTRYPOINT ["/usr/src/wordpress/docker-entrypoint.sh"]
-EXPOSE 80
+COPY docker-entrypoint.sh /entrypoint.sh
+
+# grr, ENTRYPOINT resets CMD now
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["apache2", "-DFOREGROUND"]

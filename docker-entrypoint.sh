@@ -25,6 +25,10 @@ fi
 
 if ! [ -e index.php -a -e wp-includes/version.php ]; then
 	echo >&2 "WordPress not found in $(pwd) - copying now..."
+	if [ "$(ls -A)" ]; then
+		echo >&2 "WARNING: $(pwd) is not empty - press Ctrl+C now if this is an error!"
+		( set -x; ls -A; sleep 10 )
+	fi
 	rsync --archive --one-file-system --quiet /usr/src/wordpress/ ./
 	echo >&2 "Complete! WordPress has been successfully copied to $(pwd)"
 	if [ ! -e .htaccess ]; then
@@ -42,7 +46,14 @@ fi
 # TODO handle WordPress upgrades magically in the same way, but only if wp-includes/version.php's $wp_version is less than /usr/src/wordpress/wp-includes/version.php's $wp_version
 
 if [ ! -e wp-config.php ]; then
-	cp wp-config-sample.php wp-config.php
+	awk '/^\/\*.*stop editing.*\*\/$/ && c == 0 { c = 1; system("cat") } { print }' wp-config-sample.php > wp-config.php <<'EOPHP'
+// If we're behind a proxy server and using HTTPS, we need to alert Wordpress of that fact
+// see also http://codex.wordpress.org/Administration_Over_SSL#Using_a_Reverse_Proxy
+if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+	$_SERVER['HTTPS'] = 'on';
+}
+
+EOPHP
 fi
 
 set_config() {
@@ -103,6 +114,6 @@ if (!$mysql->query('CREATE DATABASE IF NOT EXISTS `' . $mysql->real_escape_strin
 $mysql->close();
 EOPHP
 
-chown -R "$APACHE_RUN_USER:$APACHE_RUN_GROUP" .
+chown -R www-data:www-data .
 
 exec "$@"
