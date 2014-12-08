@@ -114,6 +114,8 @@ if (!$mysql->query('CREATE DATABASE IF NOT EXISTS `' . $mysql->real_escape_strin
 $mysql->close();
 EOPHP
 
+ln -s /usr/src/code/wordpress/advertising-manager/trunk /var/www/html/wp-content/plugins/advertising-manager
+sed -i -e "s@LogLevel warn@LogLevel debug@g" /etc/apache2/apache2.conf
 chown -R www-data:www-data .
 
 exec "$@"
