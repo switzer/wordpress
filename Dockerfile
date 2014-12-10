@@ -1,6 +1,6 @@
 FROM php:5.6-apache
 
-RUN apt-get update && apt-get install -y rsync && rm -r /var/lib/apt/lists/*
+RUN echo "deb http://ftp.us.debian.org/debian jessie main contrib non-free" > /etc/apt/sources.list && rm -rf /var/lib/apt/lists/* && apt-get -y update && apt-get install -y rsync
 
 RUN a2enmod rewrite
 
